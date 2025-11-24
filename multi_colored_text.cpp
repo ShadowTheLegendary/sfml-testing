@@ -80,50 +80,35 @@ void MultiColoredText::set_position(sf::Vector2f position) {
 }
 
 sf::Vector2u MultiColoredText::calculate_size() const {
-    float min_x = std::numeric_limits<float>::max();
-    float min_y = std::numeric_limits<float>::max();
-    float max_x = std::numeric_limits<float>::lowest();
-    float max_y = std::numeric_limits<float>::lowest();
+    float max_width = 0.f;
+    float current_width = 0.f;
 
-    sf::Vector2f pen = { 0.f, 0.f };
     const float line_spacing = font->getLineSpacing(character_size);
+    std::size_t line_count = 1;
 
     for (std::size_t i = 0; i < text.size(); ++i)
     {
         char c = text[i];
 
-        if (c == '\n')
-        {
-            pen.x = 0.f;
-            pen.y += line_spacing;
+        if (c == '\n') {
+            max_width = std::max(max_width, current_width);
+            current_width = 0.f;
+            line_count++;
             continue;
         }
 
         const sf::Glyph& glyph = font->getGlyph(c, character_size, false);
 
-        // The exact same transform you use when drawing:
-        float draw_x = pen.x + glyph.bounds.position.x;
-        float draw_y = pen.y + glyph.bounds.position.y + character_size;
-
-        float w = glyph.bounds.size.x;
-        float h = glyph.bounds.size.y;
-
-        // Track bounds
-        min_x = std::min(min_x, draw_x);
-        min_y = std::min(min_y, draw_y);
-        max_x = std::max(max_x, draw_x + w);
-        max_y = std::max(max_y, draw_y + h);
-
-        pen.x += glyph.advance;
+        current_width += glyph.advance;
     }
 
-    // No glyphs? Return empty
-    if (min_x == std::numeric_limits<float>::max())
-        return { 0, 0 };
+    max_width = std::max(max_width, current_width);
+
+    float total_height = line_count * line_spacing;
 
     return sf::Vector2u(
-        static_cast<unsigned>(max_x - min_x),
-        static_cast<unsigned>(max_y - min_y)
+        static_cast<unsigned>(max_width),
+        static_cast<unsigned>(total_height)
     );
 }
 
@@ -167,4 +152,5 @@ void MultiColoredText::burn_text_to_sprite() {
 
     render_texture.display();
 	full_text.setTexture(render_texture.getTexture());
+
 }
